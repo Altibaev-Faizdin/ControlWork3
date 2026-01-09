@@ -14,7 +14,7 @@ def main(page: ft.Page):
 
     history_text = ft.Text("История приветствий:")
 
-
+    
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, "r", encoding="utf-8") as f:
             greeting_history.extend([line.strip() for line in f.readlines() if line.strip()])
@@ -23,6 +23,7 @@ def main(page: ft.Page):
 
         if greeting_history:
             history_text.value = "История приветствий:\n" + "\n".join(greeting_history)
+
 
     def save_history():
         with open(HISTORY_FILE, "w", encoding="utf-8") as f:
@@ -59,6 +60,20 @@ def main(page: ft.Page):
             theme_button.icon = ft.Icons.DARK_MODE
         page.update()
 
+    favorite_names = []
+    favorite_text = ft.Text("Любимые имена:")
+
+    def add_to_favorites(e):
+        if greeting_history:
+            last_greeting = greeting_history[-1]
+
+            name_part = last_greeting.split(" - ")[-1].replace("Здравствуйте, ", "").replace("!", "")
+            if name_part not in favorite_names:
+                favorite_names.append(name_part)
+                favorite_text.value = "Любимые имена:\n" + "\n".join(favorite_names)
+                page.update()
+
+
     elevated_button = ft.ElevatedButton("ОТПРАВИТЬ", icon=ft.Icons.SEND, on_click=on_button_click)
     name_input = ft.TextField(label='Введите ваше имя', on_submit=on_button_click)
 
@@ -68,11 +83,21 @@ def main(page: ft.Page):
         on_click=toggle_theme
     )
 
+    favorite_button = ft.ElevatedButton("Добавить в избранное", on_click=add_to_favorites)
+
     buttons_row = ft.Row(
         controls=[elevated_button, theme_button],
         alignment=ft.MainAxisAlignment.START,
         spacing=10
     )
-    page.add(text_hello, name_input, buttons_row, history_text)
+
+    page.add(
+        text_hello,
+        name_input,
+        buttons_row,
+        history_text,
+        favorite_button,
+        favorite_text
+    )
 
 ft.app(target=main)
