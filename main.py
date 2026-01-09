@@ -34,6 +34,7 @@ def main(page: ft.Page):
         name = name_input.value.strip()
         current_time = datetime.datetime.now().strftime("%Y:%m:%d - %H:%M:%S")
 
+
         if name:
             record = f"{current_time} - Здравствуйте, {name}!"
             text_hello.value = record
@@ -101,3 +102,4 @@ def main(page: ft.Page):
     )
 
 ft.app(target=main)
+   
