@@ -2,69 +2,77 @@ import flet as ft
 import datetime
 import os
 
+HISTORY_FILE = "history.txt"
+
 def main(page: ft.Page):
-    page.title = "My first Flet app"
+    page.title = 'My first Flet app'
     page.theme_mode = ft.ThemeMode.LIGHT
 
     text_hello = ft.Text(value="Привет!", color=ft.Colors.BLUE)
 
-    name_input = ft.TextField(label="Введите ваше имя")
-
-    # Список истории
     greeting_history = []
 
-    # Загружаем историю из файла, если есть
-    if os.path.exists("history.txt"):
-        with open("history.txt", "r", encoding="utf-8") as f:
-            for line in f.readlines():
-                greeting_history.append(line.strip())
+    history_text = ft.Text("История приветствий:")
 
-    # Текст для отображения истории
-    history_text = ft.Column([ft.Text(h) for h in greeting_history])
 
-    def update_history(name):
-        # Время и приветствие
-        current_time = datetime.datetime.now().strftime("%Y:%m:%d - %H:%M:%S")
-        greeting = f"{current_time} - Здравствуйте, {name}!"
-        greeting_history.append(greeting)
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            greeting_history.extend([line.strip() for line in f.readlines() if line.strip()])
 
-        # Ограничиваем до последних 5
-        if len(greeting_history) > 5:
-            greeting_history[:] = greeting_history[-5:]
+        greeting_history[:] = greeting_history[-5:]
 
-        # Обновляем интерфейс
-        history_text.controls.clear()
-        for h in greeting_history:
-            history_text.controls.append(ft.Text(h))
+        if greeting_history:
+            history_text.value = "История приветствий:\n" + "\n".join(greeting_history)
 
-        # Сохраняем в файл
-        with open("history.txt", "w", encoding="utf-8") as f:
-            for h in greeting_history:
-                f.write(h + "\n")
-
-        page.update()
+    def save_history():
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            for item in greeting_history:
+                f.write(item + "\n")
 
     def on_button_click(e):
         name = name_input.value.strip()
+        current_time = datetime.datetime.now().strftime("%Y:%m:%d - %H:%M:%S")
+
         if name:
-            text_hello.value = f"Здравствуйте, {name}!"
+            record = f"{current_time} - Здравствуйте, {name}!"
+            text_hello.value = record
             text_hello.color = ft.Colors.GREEN
-            update_history(name)
-            name_input.value = ""
+            name_input.value = None
+
+            greeting_history.append(record)
+            greeting_history[:] = greeting_history[-5:]
+
+            save_history()
+            history_text.value = "История приветствий:\n" + "\n".join(greeting_history)
         else:
             text_hello.value = "Пожалуйста, введите имя!"
             text_hello.color = ft.Colors.RED
+
         page.update()
 
-    # Кнопка отправки
-    submit_button = ft.ElevatedButton("ОТПРАВИТЬ", on_click=on_button_click)
+    def toggle_theme(e):
+        if page.theme_mode == ft.ThemeMode.LIGHT:
+            page.theme_mode = ft.ThemeMode.DARK
+            theme_button.icon = ft.Icons.LIGHT_MODE
+        else:
+            page.theme_mode = ft.ThemeMode.LIGHT
+            theme_button.icon = ft.Icons.DARK_MODE
+        page.update()
 
-    page.add(
-        text_hello,
-        name_input,
-        submit_button,
-        ft.Text("История последних приветствий:"),
-        history_text
+    elevated_button = ft.ElevatedButton("ОТПРАВИТЬ", icon=ft.Icons.SEND, on_click=on_button_click)
+    name_input = ft.TextField(label='Введите ваше имя', on_submit=on_button_click)
+
+    theme_button = ft.IconButton(
+        icon=ft.Icons.DARK_MODE,
+        tooltip="День / Ночь",
+        on_click=toggle_theme
     )
+
+    buttons_row = ft.Row(
+        controls=[elevated_button, theme_button],
+        alignment=ft.MainAxisAlignment.START,
+        spacing=10
+    )
+    page.add(text_hello, name_input, buttons_row, history_text)
 
 ft.app(target=main)
