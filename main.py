@@ -17,29 +17,31 @@ def main(page: ft.Page):
     
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            greeting_history.extend([line.strip() for line in f.readlines() if line.strip()])
+            greeting_history.extend(
+                [line.strip() for line in f.readlines() if line.strip()]
+            )
 
         greeting_history[:] = greeting_history[-5:]
 
         if greeting_history:
             history_text.value = "История приветствий:\n" + "\n".join(greeting_history)
 
-
+   
     def save_history():
         with open(HISTORY_FILE, "w", encoding="utf-8") as f:
             for item in greeting_history:
                 f.write(item + "\n")
 
+   
     def on_button_click(e):
         name = name_input.value.strip()
         current_time = datetime.datetime.now().strftime("%Y:%m:%d - %H:%M:%S")
-
 
         if name:
             record = f"{current_time} - Здравствуйте, {name}!"
             text_hello.value = record
             text_hello.color = ft.Colors.GREEN
-            name_input.value = None
+            name_input.value = ""
 
             greeting_history.append(record)
             greeting_history[:] = greeting_history[-5:]
@@ -52,6 +54,7 @@ def main(page: ft.Page):
 
         page.update()
 
+    
     def toggle_theme(e):
         if page.theme_mode == ft.ThemeMode.LIGHT:
             page.theme_mode = ft.ThemeMode.DARK
@@ -61,22 +64,59 @@ def main(page: ft.Page):
             theme_button.icon = ft.Icons.DARK_MODE
         page.update()
 
+    
     favorite_names = []
     favorite_text = ft.Text("Любимые имена:")
 
     def add_to_favorites(e):
         if greeting_history:
-            last_greeting = greeting_history[-1]
+            last = greeting_history[-1]
+            name = last.split(", ")[1].replace("!", "")
 
-            name_part = last_greeting.split(" - ")[-1].replace("Здравствуйте, ", "").replace("!", "")
-            if name_part not in favorite_names:
-                favorite_names.append(name_part)
+            if name not in favorite_names:
+                favorite_names.append(name)
                 favorite_text.value = "Любимые имена:\n" + "\n".join(favorite_names)
                 page.update()
 
+   
+    def delete_last_greeting(e):
+        if greeting_history:
+            greeting_history.pop()
+            save_history()
 
-    elevated_button = ft.ElevatedButton("ОТПРАВИТЬ", icon=ft.Icons.SEND, on_click=on_button_click)
-    name_input = ft.TextField(label='Введите ваше имя', on_submit=on_button_click)
+            if greeting_history:
+                history_text.value = "История приветствий:\n" + "\n".join(greeting_history)
+            else:
+                history_text.value = "История приветствий:"
+        else:
+            text_hello.value = "История пуста!"
+            text_hello.color = ft.Colors.RED
+
+        page.update()
+
+    
+    def sort_history(e):
+        if greeting_history:
+            greeting_history.sort(key=lambda x: x.split(", ")[1])
+            save_history()
+            history_text.value = "История приветствий:\n" + "\n".join(greeting_history)
+        else:
+            text_hello.value = "История пуста!"
+            text_hello.color = ft.Colors.RED
+
+        page.update()
+
+
+    name_input = ft.TextField(
+        label="Введите ваше имя",
+        on_submit=on_button_click
+    )
+
+    send_button = ft.ElevatedButton(
+        "ОТПРАВИТЬ",
+        icon=ft.Icons.SEND,
+        on_click=on_button_click
+    )
 
     theme_button = ft.IconButton(
         icon=ft.Icons.DARK_MODE,
@@ -84,22 +124,42 @@ def main(page: ft.Page):
         on_click=toggle_theme
     )
 
-    favorite_button = ft.ElevatedButton("Добавить в избранное", on_click=add_to_favorites)
+    delete_button = ft.ElevatedButton(
+        "Удалить последнее",
+        icon=ft.Icons.DELETE,
+        on_click=delete_last_greeting
+    )
 
-    buttons_row = ft.Row(
-        controls=[elevated_button, theme_button],
-        alignment=ft.MainAxisAlignment.START,
+    sort_button = ft.ElevatedButton(
+        "Сортировать по алфавиту",
+        icon=ft.Icons.SORT_BY_ALPHA,
+        on_click=sort_history
+    )
+
+    favorite_button = ft.ElevatedButton(
+        "Добавить в избранное",
+        on_click=add_to_favorites
+    )
+
+
+    main_buttons = ft.Row(
+        controls=[send_button, theme_button],
+        spacing=10
+    )
+
+    history_buttons = ft.Row(
+        controls=[delete_button, sort_button],
         spacing=10
     )
 
     page.add(
         text_hello,
         name_input,
-        buttons_row,
+        main_buttons,
         history_text,
+        history_buttons,
         favorite_button,
         favorite_text
     )
 
 ft.app(target=main)
-   
